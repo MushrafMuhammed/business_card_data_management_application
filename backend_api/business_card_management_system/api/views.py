@@ -2,6 +2,8 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from business_card_management_system import settings
 from api.models import CardDetails
+from django.core.files.storage import default_storage
+from django.utils.text import slugify
 import pytesseract
 import cv2
 import re
@@ -11,15 +13,27 @@ from rest_framework import status
 @api_view(['POST'])
 def extract_business_card_details(request):
     if request.method == 'POST':
-        uploaded_file = request.POST.get('card_img')
+        uploaded_file = request.FILES.get('card_img')
+
         if not uploaded_file:
             return JsonResponse({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
         
+        # Save the uploaded file to the media directory
+        file_path = default_storage.save(uploaded_file.name, uploaded_file)
+
+        # Construct the full file path
+        full_file_path = os.path.join(settings.MEDIA_ROOT, file_path)
+
+        # Ensure the file is an image
+        if not full_file_path.endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            return JsonResponse({'error': 'Uploaded file is not an image'}, status=status.HTTP_400_BAD_REQUEST)
+
         # Tesseract path
         pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_PATH
         
         # Read image
-        img = cv2.imread(uploaded_file)
+        img = cv2.imread(full_file_path)
         config = ('-l eng --oem 1 --psm 3')
         text = pytesseract.image_to_string(img, config=config)
         
@@ -27,16 +41,16 @@ def extract_business_card_details(request):
         height, width, _ = img.shape
         cropped_img = img[:, width//2:]
 
-        # Save the cropped image as a logo
-        logo_path = os.path.join(settings.MEDIA_ROOT, 'logo.jpg')
+        
+        # Generate a unique name for the logo based on the uploaded file's name
+        logo_name = slugify(uploaded_file.name.split('.')[0]) + '_logo.jpg'
+        logo_path = os.path.join(settings.MEDIA_ROOT, logo_name)
+
+        # Save the cropped image as the logo
         cv2.imwrite(logo_path, cropped_img)
 
         # Relative path to the saved logo for the response
-        logo_url = os.path.join(settings.MEDIA_URL, 'logo.jpg')
-
-        # Perform OCR on the cropped image
-        config = ('-l eng --oem 1 --psm 3')
-        # text = pytesseract.image_to_string(cropped_img, config=config)
+        logo_url = os.path.join(settings.MEDIA_URL, logo_name)
         
         # Split text into lines
         lines = text.split('\n')
@@ -108,7 +122,7 @@ def upload_cart_details(request):
                 name=name,
                 profession=profession,
                 email=email,
-                phone=phone,
+                phone_number=phone,
                 website=website,
                 address=address,
                 logo=logo

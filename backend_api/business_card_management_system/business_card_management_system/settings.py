@@ -26,7 +26,35 @@ SECRET_KEY = 'django-insecure-0^9!zv=v#&%e)jvs9j!maf!wu5%8_!^3sk4gf#hjfgidup+s7w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOWED_ORIGINS = [
+    "http://192.168.29.142.0.0.1:9000",
+    "http://localhost:5173",
+]
+
+CORS_ALLOW_METHODS = (
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+)
+
+CORS_ALLOW_HEADERS = (
+    'x-requested-with',
+    'content-type',
+    'accept',
+    'origin',
+    'authorization',
+    'X-CSRFToken',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Allow-Methods'
+)
+
 
 
 # Application definition
@@ -40,7 +68,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'api'
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -51,6 +79,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'business_card_management_system.urls'
