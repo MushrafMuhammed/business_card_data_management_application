@@ -89,7 +89,7 @@ def extract_business_card_details(request):
 
 
 @api_view(['POST'])
-def add_cart_details(request):
+def upload_cart_details(request):
     if request.method == 'POST':
         name = request.POST.get('name')
         profession = request.POST.get('profession')
