@@ -133,3 +133,6 @@ MEDIA_ROOT =  os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Define the path to Tesseract OCR executable
+TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
