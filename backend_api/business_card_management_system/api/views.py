@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
-from api.serializers import CardDetailsSerializer
+from api.serializers import CardDetailsSerializer, UserSerializer
 from business_card_management_system import settings
 from .models import CardDetails, User
 from django.core.files.storage import default_storage
@@ -11,6 +11,48 @@ import re
 import os
 from rest_framework import status
 
+@api_view(['POST'])
+def user_registration(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        # Check if all required fields are provided
+        if not all([name, email, password]):
+            return JsonResponse({'error': 'All fields are required'})
+
+        try:
+            user = User.objects.create(
+                name=name,
+                email=email,
+                password=password
+            )
+            return JsonResponse({'success': 'User registered successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    return JsonResponse({'error':'method not found'})
+
+@api_view(['POST'])
+def user_login(request):
+    if request.method == 'POST':
+        emai = request.POST.get('email')
+        password = request.POST.get('password')
+
+        try:
+            user = User.objects.get(email=emai, password=password)
+            serialized_Data = UserSerializer(user)
+            return JsonResponse({'success': serialized_Data.data}, status=200)
+        
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Invalid credentials'}, status=401)
+        
+        except Exception as e:
+            return JsonResponse({'error': 'Internal server error'}, status=500)
+    
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
 @api_view(['POST'])
 def extract_business_card_details(request):
     if request.method == 'POST':
@@ -113,15 +155,18 @@ def upload_cart_details(request):
         phone = request.POST.get('phone')
         website = request.POST.get('website')
         address = request.POST.get('address')
-        logo = request.POST.get('logo')
+        logo = request.POST.get('logo') 
+        user_id = request.POST.get('user_id')  
+
+        print(name , profession, email, phone, website, address, logo, user_id)
 
         # Check if any of the required fields is None or empty
-        if None in [name, profession, email, phone, website, address, logo] or '' in [name, profession, email, phone, website, address, logo]:
-            return JsonResponse({'error': 'One or more required fields are missing'}, status=status.HTTP_400_BAD_REQUEST)
+        if None in [name, profession, email, phone, website, address, logo, user_id] or '' in [name, profession, email, phone, website, address, user_id]:
+            return JsonResponse({'error': 'One or more required fields are missing'}, status=400)
 
         try:
             card_details = CardDetails.objects.create(
-                user_id=1,
+                user_id=user_id,
                 name=name,
                 profession=profession,
                 email=email,
@@ -130,11 +175,11 @@ def upload_cart_details(request):
                 address=address,
                 logo=logo
             )
-            return JsonResponse({'success': 'Data inserted successfully'}, status=status.HTTP_201_CREATED)
+            return JsonResponse({'success': 'Data inserted successfully'}, status=201)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    return JsonResponse({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @api_view(['GET'])
 def get_cardDetails_by_user(request):
@@ -142,14 +187,18 @@ def get_cardDetails_by_user(request):
         user_id = request.GET.get('user_id')
 
         if not user_id:
-            return JsonResponse({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': 'User ID is required'}, status=400)
         
         try:
-            Card_details = CardDetails.objects.filter(user_id=user_id)
-            serializer_data = CardDetailsSerializer(Card_details, many=True)
-            return JsonResponse({'success':serializer_data.data})
-        except Exception as e:
-            # Handle data sending failure
-            return JsonResponse({'error': f'Failed to send data: {e}'}, status=500)
+            card_details = CardDetails.objects.filter(user_id=user_id)
+            serializer_data = CardDetailsSerializer(card_details, many=True)
 
-    return JsonResponse({'error':'Mothod not found'})
+            # Include the correct URL of the logo in the response
+            for card in serializer_data.data:
+                card['logo'] = settings.MEDIA_URL + str(card['logo'])
+
+            return JsonResponse({'success': serializer_data.data})
+        except Exception as e:
+            return JsonResponse({'error': f'Failed to retrieve data: {e}'}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Col, Form, Row, Container } from "react-bootstrap";
 import { BASE_URL } from "../../constants/urls";
 
@@ -12,6 +12,12 @@ const FileUpload = () => {
   const [address, setAddress] = useState("");
   const [website, setWebsite] = useState("");
   const [logo, setLogo] = useState(null);
+  const [userData, setUserData] = useState(sessionStorage.getItem("user"));
+  useEffect(()=>{
+    if (userData){
+      setUserData(JSON.parse(userData))
+    }
+  },[])
 
   function handelImage(e) {
     console.log(e.target.files);
@@ -54,6 +60,9 @@ const FileUpload = () => {
     formdata.append("website", website);
     formdata.append("address", address);
     formdata.append("logo", logo);
+    formdata.append("user_id", userData.id);
+
+
 
     const requestOptions = {
       method: "POST",
@@ -71,10 +80,10 @@ const FileUpload = () => {
     <>
     {/* Card upload */}
       <Container>
-        <Row>
+        <Row className="mt-3">
           <Col md={3}></Col>
           <Col md={6}>
-            <Row className="justify-content-center mt-5">
+            <Row>
               <Col md={12}>
                 <h4>Upload Business Card:</h4>
               </Col>
