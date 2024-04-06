@@ -1,7 +1,8 @@
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
+from api.serializers import CardDetailsSerializer
 from business_card_management_system import settings
-from api.models import CardDetails
+from .models import CardDetails, User
 from django.core.files.storage import default_storage
 from django.utils.text import slugify
 import pytesseract
@@ -91,6 +92,7 @@ def extract_business_card_details(request):
 
         return JsonResponse({
             'message': 'Card data fetching completed',
+            'card':full_file_path,
             'name': name,
             'profession': profession,
             'email': email,
@@ -119,6 +121,7 @@ def upload_cart_details(request):
 
         try:
             card_details = CardDetails.objects.create(
+                user_id=1,
                 name=name,
                 profession=profession,
                 email=email,
@@ -132,3 +135,21 @@ def upload_cart_details(request):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     return JsonResponse({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET'])
+def get_cardDetails_by_user(request):
+    if request.method == 'GET':
+        user_id = request.GET.get('user_id')
+
+        if not user_id:
+            return JsonResponse({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            Card_details = CardDetails.objects.filter(user_id=user_id)
+            serializer_data = CardDetailsSerializer(Card_details, many=True)
+            return JsonResponse({'success':serializer_data.data})
+        except Exception as e:
+            # Handle data sending failure
+            return JsonResponse({'error': f'Failed to send data: {e}'}, status=500)
+
+    return JsonResponse({'error':'Mothod not found'})
