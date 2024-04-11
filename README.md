@@ -26,7 +26,7 @@ The Business Card Management System is a web application designed to streamline 
 ### Prerequisites
 - Python 3.x
 - Node.js
-- PostgreSQL (or any other supported by Django)
+- sqlite (or any other supported by Django)
 
 ### Installation
 1. Clone the repository: `git clone <repository-url>`
